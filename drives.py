@@ -1,6 +1,9 @@
 import subprocess as sp
 import sys
 import re
+import tempfile
+import os
+
 
 class drive_printer:
 
@@ -58,15 +61,39 @@ class windows_drive_printer(drive_printer):
         if not sys.platform.startswith('win'):
             raise OSError("This type of drive printer works only in Windows OS")
 
-    def get_drives():
-        pass
+    def get_drives(self):
+        f = tempfile.NamedTemporaryFile(dir = '.',delete=False)
+        f.write('list disk')
+        f.close()
+        try:
+            s = sp.check_output(['diskpart', '/s',os.path.basename(f.name)])
+        except:
+            print "Some problems" 
+            return []
+        else:
+            return re.findall('(?P<name>\S+\s+\d+)\s+\S+\s+(?P<size>[0-9.]+\s+\S{1,3})',s)
+        finally:
+            os.remove(f.name)
     
-    def get_partitions(id):
-        pass
+    def get_partitions(self,id):
+        f = tempfile.NamedTemporaryFile(dir = '.',delete=False)
+        f.write('select disk ')
+        f.write(str(id))
+        f.write('\r\nlist partition')
+        f.close()
+        try:
+            s = sp.check_output(['diskpart', '/s',os.path.basename(f.name)])
+        except:
+            print "Wrong drive id" 
+            return []
+        else:
+            return re.findall('(?P<name>\S+\s+\d+)\s+\S+\s+(?P<size>[0-9.]+\s+\S{1,3})',s)
+        finally:
+            os.remove(f.name)
         
 
 if __name__ == '__main__':
-    dp = linux_drive_printer()
+    dp = windows_drive_printer()
     if len(sys.argv) == 1:
         dp.print_drives()
     else:
